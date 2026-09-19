@@ -576,6 +576,234 @@ class FeedbackLoop:
 
 ---
 
+## 🎯 完整实战例子：做一个编程助手
+
+让我们用一个完整的场景，把所有模块串起来看看：
+
+### 场景：用户说"帮我写一个 Python 函数，计算斐波那契数列，然后测试一下"
+
+---
+
+#### 第 1 步：Skills Loader 匹配技能
+
+**输入**：用户消息
+```python
+user_message = "帮我写一个 Python 函数，计算斐波那契数列，然后测试一下"
+```
+
+**Skills Loader 做了什么**：
+```python
+matched_skills = skill_loader.match_skills(user_message)
+# 匹配到的技能：
+# 1. code-review (关键词: "Python", "函数")
+# 2. writing-assistant (关键词: "帮我写")
+```
+
+**输出**：注入到 system prompt 的内容
+```
+Relevant skills to use:
+- code-review: Review code for quality, bugs, and best practices.
+  Always check for edge cases, performance, and readability.
+```
+
+---
+
+#### 第 2 步：Memory 注入相关记忆
+
+**输入**：用户消息 + 历史记忆
+```python
+relevant_memories = memory.search(user_message)
+# 假设之前用户说过"我喜欢用类型提示"
+# 记忆条目：
+# - content: "用户喜欢用 Python 类型提示"
+#   category: "user_preference"
+#   importance: 0.9
+```
+
+**输出**：注入到 system prompt 的内容
+```
+Relevant memories from user:
+- 用户喜欢用 Python 类型提示
+```
+
+---
+
+#### 第 3 步：RSI 注入之前的教训
+
+**输入**：当前任务
+```python
+prompt_addition = rsi.build_system_prompt_addition("Python 代码")
+# 假设之前的经验：
+# - ❌ 失败: 斐波那契递归会栈溢出
+#   教训: "斐波那契数列要用迭代实现，不要递归"
+```
+
+**输出**：注入到 system prompt 的内容
+```
+Lessons learned from previous experiences:
+1. ❌ 斐波那契数列要用迭代实现，不要递归
+```
+
+---
+
+#### 第 4 步：Agent Loop 开始执行
+
+**组装好的 system prompt**：
+```
+You are a helpful assistant.
+
+Relevant skills to use:
+- code-review: Review code for quality, bugs, and best practices.
+
+Relevant memories from user:
+- 用户喜欢用 Python 类型提示
+
+Lessons learned from previous experiences:
+1. ❌ 斐波那契数列要用迭代实现，不要递归
+```
+
+**执行过程**：
+
+**Step 1**: LLM 思考后说：
+```python
+{
+    "role": "assistant",
+    "content": "我来帮你写一个斐波那契函数，用迭代实现，加上类型提示，然后写测试。",
+    "tool_calls": [
+        {
+            "id": "call_1",
+            "function": {
+                "name": "write_file",
+                "arguments": '{"path": "fib.py", "content": "def fibonacci(n: int) -> list[int]:..."}'
+            }
+        }
+    ]
+}
+```
+
+**Step 2**: 执行工具
+```python
+tool_result = "File written successfully: fib.py"
+```
+
+**Step 3**: LLM 又说：
+```python
+{
+    "role": "assistant",
+    "content": "现在我来写测试。",
+    "tool_calls": [
+        {
+            "id": "call_2",
+            "function": {
+                "name": "write_file",
+                "arguments": '{"path": "test_fib.py", "content": "def test_fibonacci():..."}'
+            }
+        }
+    ]
+}
+```
+
+**Step 4**: 执行工具
+```python
+tool_result = "File written successfully: test_fib.py"
+```
+
+**Step 5**: LLM 最终回答：
+```python
+{
+    "role": "assistant",
+    "content": "完成了！我写了：\n1. fib.py - 斐波那契函数（迭代实现，带类型提示）\n2. test_fib.py - 测试用例\n\n你可以运行 `python test_fib.py` 来测试。"
+}
+```
+
+---
+
+#### 第 5 步：Feedback Loop 记录经验
+
+**执行完成后**：
+```python
+feedback.record_success(
+    context="Python 函数编写",
+    insight="带类型提示的斐波那契函数一次通过测试",
+    action="继续用迭代实现 + 类型提示的风格",
+)
+```
+
+**下次用户再写 Python 代码时**，这个经验会自动注入到 prompt 里。
+
+---
+
+#### 第 6 步：Layered RSI 记录各层经验
+
+```python
+# Memory 层
+layered_rsi.record_experience(
+    layer="memory",
+    operation="retrieval",
+    input_data={"query": "Python 函数"},
+    output_data={"relevant": 1},
+    success=True,
+    feedback_score=0.9,
+)
+
+# Skills 层
+layered_rsi.record_experience(
+    layer="skills",
+    operation="matching",
+    input_data={"query": "Python 函数"},
+    output_data={"matched": ["code-review"]},
+    success=True,
+    feedback_score=0.8,
+)
+
+# Tools 层
+layered_rsi.record_experience(
+    layer="tools",
+    operation="execution",
+    input_data={"steps": 2},
+    output_data={"success": True},
+    success=True,
+    feedback_score=0.95,
+)
+```
+
+---
+
+#### 第 7 步：Planning System 追踪进度
+
+如果是更复杂的任务，比如"做一个完整的 Web 应用"：
+
+```python
+plan = planning.create_plan(
+    task="Build a todo web app",
+    step_descriptions=[
+        "Design the UI",
+        "Setup project structure",
+        "Implement backend API",
+        "Implement frontend",
+        "Write tests",
+        "Deploy",
+    ],
+)
+
+# 每完成一步就更新状态
+planning.start_step("step_1")
+planning.complete_step("step_1", "UI design done")
+
+# 查看进度
+print(planning.get_plan_summary())
+# Plan: Build a todo web app
+# Progress: 1/6 (16.7%)
+#
+# Steps:
+#   ✅ step_1: Design the UI
+#   ⏳ step_2: Setup project structure
+#   ⏳ step_3: Implement backend API
+#   ...
+```
+
+---
+
 ## 🧪 运行测试
 
 ```bash
