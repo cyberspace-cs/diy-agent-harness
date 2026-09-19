@@ -17,6 +17,7 @@ from diy_agent_harness.rsi.system import RSISystem
 from diy_agent_harness.context.compactor import ContextCompactor
 from diy_agent_harness.skills.loader import SkillLoader
 from diy_agent_harness.mcp.connector import MCPConnector
+from diy_agent_harness.rsi.layered_rsi import LayeredRSI
 
 
 # 模拟 LLM 调用
@@ -170,6 +171,53 @@ def test_rsi():
     print()
 
 
+def test_layered_rsi():
+    """测试分层 RSI"""
+    print("=== 测试 Layered RSI ===")
+    lrsi = LayeredRSI(storage_dir="/tmp/test_layered_rsi")
+
+    # 记录各层经验
+    lrsi.record_experience(
+        layer="memory",
+        operation="retrieval",
+        input_data={"query": "Python"},
+        output_data={"results": 5},
+        success=True,
+        feedback_score=0.9,
+    )
+    print("✅ 记录 memory 层经验")
+
+    lrsi.record_experience(
+        layer="skills",
+        operation="matching",
+        input_data={"query": "代码 review"},
+        output_data={"matched": ["code-review"]},
+        success=True,
+        feedback_score=0.8,
+    )
+    print("✅ 记录 skills 层经验")
+
+    lrsi.record_experience(
+        layer="tools",
+        operation="execution",
+        input_data={"tool": "calculator"},
+        output_data={"result": "8"},
+        success=True,
+        feedback_score=1.0,
+    )
+    print("✅ 记录 tools 层经验")
+
+    # 获取各层策略
+    strategies = lrsi.get_all_strategies()
+    print(f"✅ 各层策略: {len(strategies)} 层")
+
+    # 生成报告
+    report = lrsi.get_summary_report()
+    print(f"✅ 总结报告: {len(report)} 字符")
+
+    print()
+
+
 def test_compaction():
     """测试上下文压缩"""
     print("=== 测试 Context Compaction ===")
@@ -292,6 +340,7 @@ if __name__ == "__main__":
     test_memory()
     test_tools()
     test_rsi()
+    test_layered_rsi()
     test_compaction()
     test_skills()
     test_mcp()

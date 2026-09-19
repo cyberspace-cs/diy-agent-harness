@@ -304,7 +304,15 @@ result = connector.execute_tool("read_file", {"path": "/tmp/test.txt"})
 - 把相关教训注入到 system prompt
 - 让 Agent 下次做得更好
 
-### 6. Context Compaction
+### 6. Layered RSI（分层自改进）
+每一层都能从经验中学习和改进：
+- **Memory RSI**：优化记忆检索策略
+- **Skills RSI**：优化技能触发匹配
+- **Tools RSI**：优化工具选择策略
+- **Context RSI**：优化上下文压缩策略
+- 每一层都有独立的经验记录和统计
+
+### 7. Context Compaction
 上下文压缩：
 - 保留 system 消息
 - 保留最近 N 条消息

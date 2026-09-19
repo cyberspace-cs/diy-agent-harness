@@ -6,7 +6,8 @@ DIY Agent Harness - 主入口
 - Session Manager
 - Long-term Memory
 - Tool Registry
-- RSI System
+- RSI System (全局)
+- Layered RSI (每层自改进)
 - Context Compaction
 - Skills Loader
 - MCP Connectors
@@ -20,6 +21,7 @@ from .session.manager import SessionManager, Session
 from .memory.long_term import LongTermMemory
 from .tools.registry import ToolRegistry, create_builtin_tools
 from .rsi.system import RSISystem
+from .rsi.layered_rsi import LayeredRSI
 from .context.compactor import ContextCompactor
 from .skills.loader import SkillLoader
 from .mcp.connector import MCPConnector, create_sample_mcp_servers
@@ -66,6 +68,7 @@ class DIYAgentHarness:
         self.memory = LongTermMemory(f"{storage_dir}/memory") if enable_memory else None
         self.tools = create_builtin_tools()
         self.rsi = RSISystem(f"{storage_dir}/rsi") if enable_rsi else None
+        self.layered_rsi = LayeredRSI(f"{storage_dir}/layered_rsi") if enable_rsi else None
         self.compactor = ContextCompactor() if enable_compaction else None
         self.skills = SkillLoader(f"{storage_dir}/skills") if enable_skills else None
         self.mcp = create_sample_mcp_servers() if enable_mcp else None
@@ -167,6 +170,41 @@ class DIYAgentHarness:
                 lesson="",  # 可以后续提炼
             )
 
+        # 记录分层 RSI 经验
+        if self.layered_rsi:
+            # Memory layer 经验
+            if self.memory:
+                self.layered_rsi.record_experience(
+                    layer="memory",
+                    operation="retrieval",
+                    input_data={"query": user_message[:100]},
+                    output_data={"relevant": bool(self.memory.search(user_message))},
+                    success=result.success,
+                    feedback_score=0.8 if result.success else 0.3,
+                )
+
+            # Skills layer 经验
+            if self.skills:
+                matched = self.skills.match_skills(user_message)
+                self.layered_rsi.record_experience(
+                    layer="skills",
+                    operation="matching",
+                    input_data={"query": user_message[:100]},
+                    output_data={"matched_skills": [s.name for s in matched]},
+                    success=result.success,
+                    feedback_score=0.8 if result.success else 0.3,
+                )
+
+            # Tools layer 经验
+            self.layered_rsi.record_experience(
+                layer="tools",
+                operation="execution",
+                input_data={"steps": len(result.steps)},
+                output_data={"success": result.success},
+                success=result.success,
+                feedback_score=0.9 if result.success else 0.2,
+            )
+
         return result
 
     def get_stats(self) -> dict:
@@ -181,6 +219,9 @@ class DIYAgentHarness:
 
         if self.rsi:
             stats["rsi"] = self.rsi.get_stats()
+
+        if self.layered_rsi:
+            stats["layered_rsi"] = self.layered_rsi.get_all_strategies()
 
         if self.skills:
             stats["skills"] = {
