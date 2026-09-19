@@ -11,6 +11,8 @@ DIY Agent Harness - 主入口
 - Context Compaction
 - Skills Loader
 - MCP Connectors
+- Planning System (规划系统)
+- Feedback Loop (反馈循环)
 """
 from __future__ import annotations
 
@@ -25,6 +27,8 @@ from .rsi.layered_rsi import LayeredRSI
 from .context.compactor import ContextCompactor
 from .skills.loader import SkillLoader
 from .mcp.connector import MCPConnector, create_sample_mcp_servers
+from .planning.system import PlanningSystem, Plan
+from .feedback.loop import FeedbackLoop
 
 
 class DIYAgentHarness:
@@ -72,6 +76,8 @@ class DIYAgentHarness:
         self.compactor = ContextCompactor() if enable_compaction else None
         self.skills = SkillLoader(f"{storage_dir}/skills") if enable_skills else None
         self.mcp = create_sample_mcp_servers() if enable_mcp else None
+        self.planning = PlanningSystem(f"{storage_dir}/plans")
+        self.feedback = FeedbackLoop(f"{storage_dir}/feedback")
 
         # 初始化当前会话
         if not self.session_manager.get_current_session():
@@ -231,5 +237,12 @@ class DIYAgentHarness:
 
         if self.mcp:
             stats["mcp"] = self.mcp.get_stats()
+
+        stats["planning"] = {
+            "total_plans": len(self.planning.plans),
+            "active_plan": self.planning.current_plan.plan_id if self.planning.current_plan else None,
+        }
+
+        stats["feedback"] = self.feedback.get_stats()
 
         return stats

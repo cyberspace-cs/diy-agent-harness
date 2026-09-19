@@ -318,17 +318,31 @@ result = connector.execute_tool("read_file", {"path": "/tmp/test.txt"})
 - 保留最近 N 条消息
 - 中间的旧消息压缩成摘要
 
-### 7. Skills System
+### 8. Skills System
 技能加载：
 - 预定义的提示词包
 - 根据用户输入自动匹配
 - 注入到 system prompt
 
-### 8. MCP Connectors
+### 9. MCP Connectors
 外部连接：
 - 连接到外部 MCP 服务器
 - 发现和调用远程工具
 - 统一的工具接口
+
+### 10. Planning System（规划系统）
+先规划再行动：
+- 把复杂任务拆成多个步骤
+- 支持步骤依赖（串行/并行）
+- 进度追踪（pending / in_progress / completed / failed）
+- 计划持久化，可切换
+
+### 11. Feedback Loop（反馈循环）
+从经验中学习：
+- 记录成功/失败/警告反馈
+- 相关反馈注入到 system prompt
+- 让 Agent 下次做得更好
+- 统计成功率和学习效果
 
 ---
 

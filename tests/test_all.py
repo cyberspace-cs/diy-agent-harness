@@ -18,6 +18,8 @@ from diy_agent_harness.context.compactor import ContextCompactor
 from diy_agent_harness.skills.loader import SkillLoader
 from diy_agent_harness.mcp.connector import MCPConnector
 from diy_agent_harness.rsi.layered_rsi import LayeredRSI
+from diy_agent_harness.planning.system import PlanningSystem
+from diy_agent_harness.feedback.loop import FeedbackLoop
 
 
 # 模拟 LLM 调用
@@ -295,6 +297,80 @@ def test_mcp():
     print()
 
 
+def test_planning():
+    """测试规划系统"""
+    print("=== 测试 Planning System ===")
+    planner = PlanningSystem(storage_dir="/tmp/test_planning")
+
+    # 创建计划
+    plan = planner.create_plan(
+        task="Build a web app",
+        step_descriptions=[
+            "Design UI",
+            "Setup project",
+            "Implement backend",
+            "Implement frontend",
+            "Test and deploy",
+        ],
+    )
+    print(f"✅ 创建计划: {plan.plan_id}")
+    print(f"   步骤数: {len(plan.steps)}")
+
+    # 开始第一步
+    planner.start_step("step_1")
+    print("✅ 开始 step_1")
+
+    # 完成第一步
+    planner.complete_step("step_1", "UI design done")
+    print("✅ 完成 step_1")
+
+    # 获取下一步
+    next_steps = planner.get_next_steps()
+    print(f"✅ 下一步: {[s.step_id for s in next_steps]}")
+
+    # 获取计划总结
+    summary = planner.get_plan_summary()
+    print(f"✅ 计划总结: {len(summary)} 字符")
+
+    print()
+
+
+def test_feedback():
+    """测试反馈循环"""
+    print("=== 测试 Feedback Loop ===")
+    fb = FeedbackLoop(storage_dir="/tmp/test_feedback")
+
+    # 记录成功
+    fb.record_success(
+        context="Python code review",
+        insight="Unit tests caught 3 bugs before merge.",
+        action="Always write tests for new functions.",
+    )
+    print("✅ 记录成功反馈")
+
+    # 记录失败
+    fb.record_failure(
+        context="API integration",
+        insight="Timeout errors caused retries to fail.",
+        action="Add exponential backoff to retries.",
+    )
+    print("✅ 记录失败反馈")
+
+    # 获取相关反馈
+    relevant = fb.get_relevant_feedback("Python code")
+    print(f"✅ 相关反馈: {len(relevant)} 条")
+
+    # 构建 prompt 补充
+    prompt_add = fb.build_prompt_addition("Python code review")
+    print(f"✅ Prompt 补充: {len(prompt_add)} 字符")
+
+    # 统计
+    stats = fb.get_stats()
+    print(f"✅ 统计: {stats['total']} 条, 成功率 {stats['success_rate']:.1f}%")
+
+    print()
+
+
 async def test_full_harness():
     """测试完整 Harness"""
     print("=== 测试完整 DIY Agent Harness ===")
@@ -341,6 +417,8 @@ if __name__ == "__main__":
     test_tools()
     test_rsi()
     test_layered_rsi()
+    test_planning()
+    test_feedback()
     test_compaction()
     test_skills()
     test_mcp()
