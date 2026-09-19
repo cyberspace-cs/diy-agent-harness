@@ -7,6 +7,9 @@ DIY Agent Harness - 主入口
 - Long-term Memory
 - Tool Registry
 - RSI System
+- Context Compaction
+- Skills Loader
+- MCP Connectors
 """
 from __future__ import annotations
 
@@ -17,6 +20,9 @@ from .session.manager import SessionManager, Session
 from .memory.long_term import LongTermMemory
 from .tools.registry import ToolRegistry, create_builtin_tools
 from .rsi.system import RSISystem
+from .context.compactor import ContextCompactor
+from .skills.loader import SkillLoader
+from .mcp.connector import MCPConnector, create_sample_mcp_servers
 
 
 class DIYAgentHarness:
@@ -29,6 +35,9 @@ class DIYAgentHarness:
     - Long-term Memory：长期记忆
     - Tool Registry：工具系统
     - RSI System：递归自改进
+    - Context Compactor：上下文压缩
+    - Skills Loader：技能加载
+    - MCP Connectors：外部 MCP 服务器连接
     """
 
     def __init__(
@@ -39,18 +48,27 @@ class DIYAgentHarness:
         max_steps: int = 20,
         enable_rsi: bool = True,
         enable_memory: bool = True,
+        enable_compaction: bool = True,
+        enable_skills: bool = True,
+        enable_mcp: bool = False,
     ):
         self.llm_call = llm_call
         self.base_system_prompt = system_prompt
         self.max_steps = max_steps
         self.enable_rsi = enable_rsi
         self.enable_memory = enable_memory
+        self.enable_compaction = enable_compaction
+        self.enable_skills = enable_skills
+        self.enable_mcp = enable_mcp
 
         # 初始化各子系统
         self.session_manager = SessionManager(f"{storage_dir}/sessions")
         self.memory = LongTermMemory(f"{storage_dir}/memory") if enable_memory else None
         self.tools = create_builtin_tools()
         self.rsi = RSISystem(f"{storage_dir}/rsi") if enable_rsi else None
+        self.compactor = ContextCompactor() if enable_compaction else None
+        self.skills = SkillLoader(f"{storage_dir}/skills") if enable_skills else None
+        self.mcp = create_sample_mcp_servers() if enable_mcp else None
 
         # 初始化当前会话
         if not self.session_manager.get_current_session():
@@ -93,6 +111,12 @@ class DIYAgentHarness:
             rsi_context = self.rsi.build_system_prompt_addition(task)
             if rsi_context:
                 prompt += rsi_context
+
+        # 注入技能
+        if self.skills:
+            skills_prompt, _ = self.skills.build_skills_prompt(task)
+            if skills_prompt:
+                prompt += skills_prompt
 
         return prompt
 
@@ -157,5 +181,14 @@ class DIYAgentHarness:
 
         if self.rsi:
             stats["rsi"] = self.rsi.get_stats()
+
+        if self.skills:
+            stats["skills"] = {
+                "total": len(self.skills.skills),
+                "names": list(self.skills.skills.keys()),
+            }
+
+        if self.mcp:
+            stats["mcp"] = self.mcp.get_stats()
 
         return stats
