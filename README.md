@@ -356,6 +356,145 @@ python tests/test_all.py
 
 ---
 
+## 🎯 设计决策
+
+### 为什么做这个项目？
+
+现在市面上有很多 Agent 框架（LangChain、AutoGPT、CrewAI 等），但它们都太复杂了，新手很难理解底层原理。这个项目的目标是：**用最简单的代码，讲清楚 Agent Harness 的每一层是怎么工作的**。
+
+### 核心设计原则
+
+| 原则 | 说明 |
+| --- | --- |
+| **模块化** | 每个模块独立，可以单独学习和替换 |
+| **最小依赖** | 纯 Python，无第三方依赖，新手跑起来零门槛 |
+| **可插拔** | LLM 调用、工具、记忆都是可替换的 |
+| **教学优先** | 代码可读性 > 性能优化 |
+| **渐进式** | 从最简单的 Agent Loop 开始，一步步加功能 |
+
+### 架构分层为什么这么分？
+
+```
+应用层 → 记忆层 → 上下文层 → 核心层 → 模型层
+```
+
+- **模型层**：最底层，只负责调用 LLM，不关心业务逻辑
+- **核心层**：Agent Loop，推理循环，是整个系统的心脏
+- **上下文层**：管理上下文窗口，压缩、路由、加载
+- **记忆层**：短期会话 + 长期记忆 + 自改进
+- **应用层**：技能、工具、外部连接，最贴近用户
+
+这种分层的好处是：**每一层只做自己的事，层与层之间通过清晰的接口通信**。
+
+---
+
+## ✅ 验收标准
+
+### 功能验收
+
+| 模块 | 验收标准 | 状态 |
+| --- | --- | --- |
+| **Agent Loop** | 能正确调用工具并返回结果 | ✅ |
+| **Session Manager** | 能创建、切换、持久化会话 | ✅ |
+| **Long-term Memory** | 能添加、搜索、注入记忆 | ✅ |
+| **Tool Registry** | 能注册、执行、转换工具 schema | ✅ |
+| **RSI System** | 能记录经验、注入教训 | ✅ |
+| **Context Compactor** | 能自动压缩长对话 | ✅ |
+| **Skills Loader** | 能根据输入匹配技能 | ✅ |
+| **MCP Connector** | 能连接外部 MCP 服务器 | ✅ |
+
+### 代码质量验收
+
+- ✅ 每个模块都有独立的测试
+- ✅ 纯 Python，无第三方依赖
+- ✅ 类型提示完整
+- ✅ 文档齐全，有输入输出示例
+
+---
+
+## 🧪 功能测试
+
+### 运行所有测试
+
+```bash
+python tests/test_all.py
+```
+
+### 测试覆盖
+
+| 测试文件 | 覆盖模块 | 测试用例数 |
+| --- | --- | --- |
+| `test_session_manager` | Session Manager | 5 |
+| `test_memory` | Long-term Memory | 4 |
+| `test_tools` | Tool Registry | 3 |
+| `test_rsi` | RSI System | 4 |
+| `test_compaction` | Context Compactor | 3 |
+| `test_skills` | Skills Loader | 3 |
+| `test_mcp` | MCP Connector | 3 |
+| `test_full_harness` | 完整 Harness | 5 |
+
+### 测试输出示例
+
+```
+=== 测试 Session Manager ===
+✅ 创建会话: sess_8ea1338c
+✅ 添加消息: 2 条
+✅ 切换会话: Test 1
+✅ 所有会话: 2 个
+
+=== 测试 Long-term Memory ===
+✅ 添加 3 条记忆
+✅ 搜索 'Python': 1 条结果
+✅ 统计: 3 条记忆, 平均重要性 0.80
+
+...
+
+✅ 所有测试通过！
+```
+
+---
+
+## 🚀 CI/CD 与持续开发
+
+### 持续集成（CI）
+
+```yaml
+# .github/workflows/test.yml
+name: Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tests/test_all.py
+```
+
+### 持续开发路线图
+
+| 阶段 | 功能 | 状态 |
+| --- | --- | --- |
+| **v0.1** | 基础 Agent Loop + 工具系统 | ✅ 已完成 |
+| **v0.2** | 会话管理 + 长期记忆 | ✅ 已完成 |
+| **v0.3** | RSI 自改进 + 上下文压缩 | ✅ 已完成 |
+| **v0.4** | 技能加载 + MCP 连接 | ✅ 已完成 |
+| **v0.5** | 向量记忆 + 工具市场 | 🔄 进行中 |
+| **v1.0** | 生产级 + 完整文档 | 📋 计划中 |
+
+### 如何贡献
+
+1. Fork 这个仓库
+2. 创建你的功能分支：`git checkout -b feat/my-feature`
+3. 提交你的改动：`git commit -m 'feat: add my feature'`
+4. 推送到分支：`git push origin feat/my-feature`
+5. 提交 Pull Request
+
+---
+
 ## 📚 学习路线
 
 按照这个顺序学习每个模块：
